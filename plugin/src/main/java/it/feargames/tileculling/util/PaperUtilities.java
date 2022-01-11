@@ -11,8 +11,15 @@ public final class PaperUtilities {
 
 	static {
 		try {
-			GET_NO_TICK_VIEW_DISTANCE_METHOD = World.class.getDeclaredMethod("getNoTickViewDistance");
+			try {
+				// 1.18+
+				GET_NO_TICK_VIEW_DISTANCE_METHOD = World.class.getDeclaredMethod("getViewDistance");
+			} catch (NoSuchMethodException ignored) {
+				// Paper 1.16.5 - 1.17
+				GET_NO_TICK_VIEW_DISTANCE_METHOD = World.class.getDeclaredMethod("getNoTickViewDistance");
+			}
 		} catch (NoSuchMethodException ignored) {
+			// Spigot 1.16.5 - 1.17 (fallback to view distance)
 		}
 	}
 
