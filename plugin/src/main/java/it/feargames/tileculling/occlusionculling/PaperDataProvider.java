@@ -43,6 +43,9 @@ public class PaperDataProvider implements DataProvider {
 		if (snapshot == null) {
 			throw new IllegalStateException("Chunk not loaded into DataProvider!");
 		}
+		if (y < world.getMinHeight() || y > world.getMaxHeight()) {
+			return false;
+		}
 		int relativeX = x & 0xF;
 		int relativeZ = z & 0xF;
 		Material material = snapshot.getBlockType(relativeX, y, relativeZ);

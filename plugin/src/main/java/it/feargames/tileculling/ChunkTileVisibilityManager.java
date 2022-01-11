@@ -39,9 +39,6 @@ public class ChunkTileVisibilityManager {
 	public void updateVisibility(Player player) {
 		World world = player.getWorld();
 		Location playerEyeLocation = player.getEyeLocation();
-		if (playerEyeLocation.getY() > 255 || playerEyeLocation.getY() < 0) { // TODO: 1.17
-			return;
-		}
 
 		viewerPosition.set(playerEyeLocation.getX(), playerEyeLocation.getY(), playerEyeLocation.getZ());
 
