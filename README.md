@@ -1,5 +1,5 @@
 # TileCulling
-[![Build Status](https://ci.codemc.io/buildStatus/icon?job=FearGames%2FTileCulling)](https://ci.codemc.io/job/FearGames/job/TileCulling/)
+[![Build Status](https://ci.codemc.io/buildStatus/icon?job=NovaverseMC%2FTileCulling)](https://ci.codemc.io/job/NovaverseMC/job/TileCulling/)
 
 Hides tiles(mainly chests) that players are not able to see due to blocks in the way(occlusion culling), and then blocks packets for these entities. This results in the following:
 
