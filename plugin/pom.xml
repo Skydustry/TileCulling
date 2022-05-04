@@ -7,28 +7,33 @@
 	<parent>
 		<groupId>it.feargames.tileculling</groupId>
 		<artifactId>tileculling-parent</artifactId>
-		<version>1.2.3-SNAPSHOT</version>
+		<version>1.2.4-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<artifactId>tileculling-plugin</artifactId>
-	<version>1.2.3-SNAPSHOT</version>
+	<version>1.2.4-SNAPSHOT</version>
 
 	<dependencies>
 		<dependency>
 			<groupId>it.feargames.tileculling</groupId>
 			<artifactId>tileculling-v1_16_R3</artifactId>
-			<version>1.2.3-SNAPSHOT</version>
+			<version>1.2.4-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>it.feargames.tileculling</groupId>
 			<artifactId>tileculling-v1_17_R1</artifactId>
-			<version>1.2.3-SNAPSHOT</version>
+			<version>1.2.4-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>it.feargames.tileculling</groupId>
 			<artifactId>tileculling-v1_18_R1</artifactId>
-			<version>1.2.3-SNAPSHOT</version>
+			<version>1.2.4-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>it.feargames.tileculling</groupId>
+			<artifactId>tileculling-v1_18_R2</artifactId>
+			<version>1.2.4-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.logisticscraft</groupId>
