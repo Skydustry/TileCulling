@@ -7,38 +7,49 @@
 	<parent>
 		<groupId>it.feargames.tileculling</groupId>
 		<artifactId>tileculling-parent</artifactId>
-		<version>1.2.4-SNAPSHOT</version>
+		<version>1.2.5-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<artifactId>tileculling-plugin</artifactId>
-	<version>1.2.4-SNAPSHOT</version>
+	<version>1.2.5-SNAPSHOT</version>
 
 	<dependencies>
 		<dependency>
 			<groupId>it.feargames.tileculling</groupId>
 			<artifactId>tileculling-v1_16_R3</artifactId>
-			<version>1.2.4-SNAPSHOT</version>
+			<version>1.2.5-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>it.feargames.tileculling</groupId>
 			<artifactId>tileculling-v1_17_R1</artifactId>
-			<version>1.2.4-SNAPSHOT</version>
+			<version>1.2.5-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>it.feargames.tileculling</groupId>
 			<artifactId>tileculling-v1_18_R1</artifactId>
-			<version>1.2.4-SNAPSHOT</version>
+			<version>1.2.5-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>it.feargames.tileculling</groupId>
 			<artifactId>tileculling-v1_18_R2</artifactId>
-			<version>1.2.4-SNAPSHOT</version>
+			<version>1.2.5-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>it.feargames.tileculling</groupId>
+			<artifactId>tileculling-v1_19_R1</artifactId>
+			<version>1.2.5-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>it.unimi.dsi</groupId>
+			<artifactId>fastutil</artifactId>
+			<version>8.2.1</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.logisticscraft</groupId>
 			<artifactId>occlusionculling</artifactId>
-			<version>0.0.5-SNAPSHOT</version>
+			<version>0.0.6-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 

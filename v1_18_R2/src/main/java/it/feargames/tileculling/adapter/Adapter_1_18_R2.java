@@ -213,7 +213,7 @@ public class Adapter_1_18_R2 implements IAdapter {
         } else if (block instanceof Beehive) {
             type = BlockEntityType.BEEHIVE;
         } else if (block instanceof SculkSensor) {
-            type = BlockEntityType.BEEHIVE;
+            type = BlockEntityType.SCULK_SENSOR;
         } else {
             return;
         }
