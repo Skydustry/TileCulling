@@ -1,17 +1,15 @@
 package it.feargames.tileculling.adapter;
 
 import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.wrappers.WrappedLevelChunkData;
 import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
-import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
-import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerPlayerConnection;
@@ -22,103 +20,30 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.*;
+import org.bukkit.block.data.type.Bed;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.craftbukkit.v1_18_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_18_R1.block.CraftBlockEntityState;
-import org.bukkit.craftbukkit.v1_18_R1.block.data.CraftBlockData;
-import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_20_R3.block.CraftBlockEntityState;
+import org.bukkit.craftbukkit.v1_20_R3.block.data.CraftBlockData;
+import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
-
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
+import net.minecraft.core.registries.Registries;
 
-@SuppressWarnings({"JavaReflectionMemberAccess", "unused"})
-public class Adapter_1_18_R1 implements IAdapter {
+public class Adapter_1_20_R3 implements IAdapter {
 
     private static final Constructor<ClientboundBlockEntityDataPacket> BLOCK_ENTITY_DATA_PACKET_CONSTRUCTOR;
-
-    private static final Field BLOCK_ENTITIES_DATA_FIELD;
-    private static final Field CHUNK_SECTION_BUFFER_FIELD;
-
-    private static final Class<?> BLOCK_ENTITY_INFO_CLASS;
-    private static final Field BLOCK_ENTITY_INFO_TYPE_FIELD;
-    private static final Field BLOCK_ENTITY_INFO_XZ_FIELD;
-    private static final Field BLOCK_ENTITY_INFO_Y_FIELD;
 
     static {
         try {
             BLOCK_ENTITY_DATA_PACKET_CONSTRUCTOR = ClientboundBlockEntityDataPacket.class.getDeclaredConstructor(
                     BlockPos.class, BlockEntityType.class, CompoundTag.class);
             BLOCK_ENTITY_DATA_PACKET_CONSTRUCTOR.setAccessible(true);
-
-            BLOCK_ENTITIES_DATA_FIELD = ClientboundLevelChunkPacketData.class.getDeclaredField("d"); // blockEntitiesData
-            BLOCK_ENTITIES_DATA_FIELD.setAccessible(true);
-
-            CHUNK_SECTION_BUFFER_FIELD = ClientboundLevelChunkPacketData.class.getDeclaredField("c"); // buffer
-            CHUNK_SECTION_BUFFER_FIELD.setAccessible(true);
-
-            BLOCK_ENTITY_INFO_CLASS = ClientboundLevelChunkPacketData.class.getDeclaredClasses()[0];
-            BLOCK_ENTITY_INFO_TYPE_FIELD = BLOCK_ENTITY_INFO_CLASS.getDeclaredField("c"); // type
-            BLOCK_ENTITY_INFO_TYPE_FIELD.setAccessible(true);
-            BLOCK_ENTITY_INFO_XZ_FIELD = BLOCK_ENTITY_INFO_CLASS.getDeclaredField("a"); // packedXZ
-            BLOCK_ENTITY_INFO_XZ_FIELD.setAccessible(true);
-            BLOCK_ENTITY_INFO_Y_FIELD = BLOCK_ENTITY_INFO_CLASS.getDeclaredField("b"); // y
-            BLOCK_ENTITY_INFO_Y_FIELD.setAccessible(true);
         } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static List<?> getChunkTileEntities(ClientboundLevelChunkPacketData data) {
-        try {
-            return (List<?>) BLOCK_ENTITIES_DATA_FIELD.get(data);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static byte[] getChunkSectionBuffer(ClientboundLevelChunkPacketData data) {
-        try {
-            return (byte[]) CHUNK_SECTION_BUFFER_FIELD.get(data);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static void writeChunkSectionBuffer(ClientboundLevelChunkPacketData data, byte[] buffer) {
-        try {
-            CHUNK_SECTION_BUFFER_FIELD.set(data, buffer);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static String getChunkTileEntityType(Object tileEntity) {
-        try {
-            BlockEntityType<?> type = (BlockEntityType<?>) BLOCK_ENTITY_INFO_TYPE_FIELD.get(tileEntity);
-            return Objects.requireNonNull(Registry.BLOCK_ENTITY_TYPE.getKey(type)).getPath();
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static int getChunkTileEntityXZ(Object tileEntity) {
-        try {
-            return (int) BLOCK_ENTITY_INFO_XZ_FIELD.get(tileEntity);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static int getChunkTileEntityY(Object tileEntity) {
-        try {
-            return (int) BLOCK_ENTITY_INFO_Y_FIELD.get(tileEntity);
-        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
@@ -168,14 +93,10 @@ public class Adapter_1_18_R1 implements IAdapter {
             type = BlockEntityType.SIGN;
         } else if (block instanceof CreatureSpawner) {
             type = BlockEntityType.MOB_SPAWNER;
-        } else if (block.getType() == Material.PISTON_HEAD) { // FIXME
-            type = BlockEntityType.PISTON;
         } else if (block instanceof BrewingStand) {
             type = BlockEntityType.BREWING_STAND;
         } else if (block instanceof EnchantingTable) {
             type = BlockEntityType.ENCHANTING_TABLE;
-        } else if (block.getType() == Material.END_PORTAL) { // FIXME
-            type = BlockEntityType.END_PORTAL;
         } else if (block instanceof Beacon) {
             type = BlockEntityType.BEACON;
         } else if (block instanceof Skull) {
@@ -196,7 +117,7 @@ public class Adapter_1_18_R1 implements IAdapter {
             type = BlockEntityType.COMMAND_BLOCK;
         } else if (block instanceof ShulkerBox) {
             type = BlockEntityType.SHULKER_BOX;
-        } else if (block instanceof Bed) { // FIXME
+        } else if (block instanceof Bed) {
             type = BlockEntityType.BED;
         } else if (block instanceof Conduit) {
             type = BlockEntityType.CONDUIT;
@@ -214,6 +135,10 @@ public class Adapter_1_18_R1 implements IAdapter {
             type = BlockEntityType.BEEHIVE;
         } else if (block instanceof SculkSensor) {
             type = BlockEntityType.SCULK_SENSOR;
+        } else if (block instanceof SculkCatalyst) {
+            type = BlockEntityType.SCULK_CATALYST;
+        } else if (block instanceof SculkShrieker) {
+            type = BlockEntityType.SCULK_SHRIEKER;
         } else {
             return;
         }
@@ -235,16 +160,15 @@ public class Adapter_1_18_R1 implements IAdapter {
         CraftWorld craftWorld = (CraftWorld) player.getWorld();
         ServerLevel vanillaWorld = craftWorld.getHandle();
 
-        ClientboundLevelChunkWithLightPacket packet = (ClientboundLevelChunkWithLightPacket) container.getHandle();
-        ClientboundLevelChunkPacketData data = packet.getChunkData();
+        WrappedLevelChunkData.ChunkData data = container.getLevelChunkData().read(0);
 
-        List<?> blockTileEntities = getChunkTileEntities(data);
+        List<WrappedLevelChunkData.BlockEntityInfo> blockTileEntities = data.getBlockEntityInfo();
 
         IntList removedBlocks = null;
-        for (Iterator<?> iterator = blockTileEntities.iterator(); iterator.hasNext(); ) {
-            Object tileEntity = iterator.next();
+        for (Iterator<WrappedLevelChunkData.BlockEntityInfo> iterator = blockTileEntities.iterator(); iterator.hasNext(); ) {
+            WrappedLevelChunkData.BlockEntityInfo tileEntity = iterator.next();
 
-            String type = getChunkTileEntityType(tileEntity);
+            String type = tileEntity.getTypeKey().getKey();
             if (!tileEntityTypeFilter.apply(type)) {
                 continue;
             }
@@ -255,11 +179,10 @@ public class Adapter_1_18_R1 implements IAdapter {
                 removedBlocks = new IntArrayList();
             }
 
-            short y = (short) getChunkTileEntityY(tileEntity);
+            short y = (short) tileEntity.getY();
 
-            int packedXZ = getChunkTileEntityXZ(tileEntity);
-            byte x = (byte) (packedXZ & 0xF);
-            byte z = (byte) ((packedXZ >> 4) & 0xF);
+            byte x = (byte) tileEntity.getSectionX();
+            byte z = (byte) tileEntity.getSectionZ();
 
             // Y, X, Z
             int key = (y & 0xFFFF) | ((x & 0xF) << 16) | ((z & 0xF) << 20);
@@ -270,14 +193,14 @@ public class Adapter_1_18_R1 implements IAdapter {
             return;
         }
 
-        byte[] readerBuffer = getChunkSectionBuffer(data);
+        byte[] readerBuffer = data.getBuffer();
         FriendlyByteBuf reader = new FriendlyByteBuf(Unpooled.wrappedBuffer(readerBuffer));
 
         int bufferSize = 0;
         LevelChunkSection[] sections = new LevelChunkSection[vanillaWorld.getSectionsCount()];
         for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
             int yOffset = vanillaWorld.getSectionYFromSectionIndex(sectionIndex);
-            LevelChunkSection section = new LevelChunkSection(yOffset, vanillaWorld.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY));
+            LevelChunkSection section = new LevelChunkSection(vanillaWorld.registryAccess().registryOrThrow(Registries.BIOME));
             section.read(reader);
 
             for (byte y = 0; y < 16; y++) {
@@ -304,7 +227,8 @@ public class Adapter_1_18_R1 implements IAdapter {
             section.write(writer);
         }
 
-        writeChunkSectionBuffer(data, writerBuffer);
-    }
+        data.setBuffer(writerBuffer);
 
+        container.getLevelChunkData().write(0, data);
+    }
 }

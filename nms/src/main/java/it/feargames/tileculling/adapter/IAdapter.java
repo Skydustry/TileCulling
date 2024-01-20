@@ -10,9 +10,9 @@ import java.util.function.Function;
 
 public interface IAdapter {
 
-	void updateBlockState(Player player, Location location, BlockData blockData);
+    void updateBlockState(Player player, Location location, BlockData blockData);
 
-	void updateBlockData(Player player, Location location, BlockState block);
+    void updateBlockData(Player player, Location location, BlockState block);
 
     void transformPacket(Player player, PacketContainer container, Function<String, Boolean> tileEntityTypeFilter);
 
