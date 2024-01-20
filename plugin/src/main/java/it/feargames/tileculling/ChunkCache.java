@@ -26,175 +26,176 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ChunkCache implements Listener {
 
-	private final CullingPlugin plugin;
-	private final HiddenTileRegistry hiddenTileRegistry;
+    private final CullingPlugin plugin;
+    private final HiddenTileRegistry hiddenTileRegistry;
 
-	private final Map<World, Long2ObjectMap<ChunkEntry>> cachedChunks = new HashMap<>();
-	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-	private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
-	private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
+    private final Map<World, Long2ObjectMap<ChunkEntry>> cachedChunks = new HashMap<>();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
+    private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
 
-	public ChunkCache(CullingPlugin plugin, HiddenTileRegistry hiddenTileRegistry) {
-		this.plugin = plugin;
-		this.hiddenTileRegistry = hiddenTileRegistry;
-		for (World world : plugin.getServer().getWorlds()) {
-			for (Chunk chunk : world.getLoadedChunks()) {
-				updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), chunk);
-			}
-		}
-	}
+    public ChunkCache(CullingPlugin plugin, HiddenTileRegistry hiddenTileRegistry) {
+        this.plugin = plugin;
+        this.hiddenTileRegistry = hiddenTileRegistry;
+        for (World world : plugin.getServer().getWorlds()) {
+            for (Chunk chunk : world.getLoadedChunks()) {
+                updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), chunk);
+            }
+        }
+    }
 
-	static class ChunkEntry {
-		ChunkSnapshot snapshot;
-		List<BlockState> tiles;
-	}
+    static class ChunkEntry {
 
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onWorldUnload(WorldUnloadEvent event) {
-		cachedChunks.remove(event.getWorld());
-	}
+        ChunkSnapshot snapshot;
+        List<BlockState> tiles;
+    }
 
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onBlockPlace(BlockPlaceEvent e) {
-		Chunk chunk = e.getBlock().getChunk();
-		// We have to delay as tile entities are updated after the event has completed
-		new BukkitRunnable() {
-			@Override
-			public void run() {
-				updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), chunk);
-			}
-		}.runTask(plugin);
-	}
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onWorldUnload(WorldUnloadEvent event) {
+        cachedChunks.remove(event.getWorld());
+    }
 
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onBlockBreak(BlockBreakEvent e) {
-		Chunk chunk = e.getBlock().getChunk();
-		// We have to delay as tile entities are updated after the event has completed
-		new BukkitRunnable() {
-			@Override
-			public void run() {
-				updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), chunk);
-			}
-		}.runTask(plugin);
-	}
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockPlace(BlockPlaceEvent e) {
+        Chunk chunk = e.getBlock().getChunk();
+        // We have to delay as tile entities are updated after the event has completed
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), chunk);
+            }
+        }.runTask(plugin);
+    }
 
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onSignUpdate(SignChangeEvent e) {
-		Chunk chunk = e.getBlock().getChunk();
-		// We have to delay as tile entities are updated after the event has completed
-		new BukkitRunnable() {
-			@Override
-			public void run() {
-				updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), chunk);
-			}
-		}.runTask(plugin);
-	}
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockBreak(BlockBreakEvent e) {
+        Chunk chunk = e.getBlock().getChunk();
+        // We have to delay as tile entities are updated after the event has completed
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), chunk);
+            }
+        }.runTask(plugin);
+    }
 
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onChunkLoad(ChunkLoadEvent e) {
-		Chunk chunk = e.getChunk();
-		updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), chunk);
-	}
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSignUpdate(SignChangeEvent e) {
+        Chunk chunk = e.getBlock().getChunk();
+        // We have to delay as tile entities are updated after the event has completed
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), chunk);
+            }
+        }.runTask(plugin);
+    }
 
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onChunkUnload(ChunkUnloadEvent e) {
-		Chunk chunk = e.getChunk();
-		updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), null);
-	}
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onChunkLoad(ChunkLoadEvent e) {
+        Chunk chunk = e.getChunk();
+        updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), chunk);
+    }
 
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onBlockExplode(BlockExplodeEvent e) {
-		handleExplosionSync(e.blockList());
-	}
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onChunkUnload(ChunkUnloadEvent e) {
+        Chunk chunk = e.getChunk();
+        updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), null);
+    }
 
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onEntityExplode(EntityExplodeEvent e) {
-		handleExplosionSync(e.blockList());
-	}
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockExplode(BlockExplodeEvent e) {
+        handleExplosionSync(e.blockList());
+    }
 
-	private void handleExplosionSync(List<Block> blockList) {
-		Set<Chunk> chunks = new HashSet<>();
-		for (Block block : blockList) {
-			chunks.add(block.getChunk());
-		}
-		for (Chunk chunk : chunks) {
-			updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), chunk);
-		}
-	}
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntityExplode(EntityExplodeEvent e) {
+        handleExplosionSync(e.blockList());
+    }
 
-	private void updateCachedChunkSync(World world, long chunkKey, final Chunk chunk) {
-		if (chunk == null) {
-			try {
-				writeLock.lock();
-				Long2ObjectMap<ChunkEntry> entries = cachedChunks.get(world);
-				if (entries != null) {
-					entries.remove(chunkKey);
-					if (entries.isEmpty()) {
-						cachedChunks.remove(world);
-					}
-				}
-			} finally {
-				writeLock.unlock();
-			}
-			return;
-		}
+    private void handleExplosionSync(List<Block> blockList) {
+        Set<Chunk> chunks = new HashSet<>();
+        for (Block block : blockList) {
+            chunks.add(block.getChunk());
+        }
+        for (Chunk chunk : chunks) {
+            updateCachedChunkSync(chunk.getWorld(), LocationUtilities.getChunkKey(chunk), chunk);
+        }
+    }
 
-		try {
-			writeLock.lock();
-			ChunkEntry entry = cachedChunks.computeIfAbsent(world, k -> new Long2ObjectOpenHashMap<>()).computeIfAbsent(chunkKey, k -> new ChunkEntry());
-			entry.snapshot = chunk.getChunkSnapshot(false, false, false);
-			entry.tiles = filterTiles(chunk.getTileEntities());
-		} finally {
-			writeLock.unlock();
-		}
-	}
+    private void updateCachedChunkSync(World world, long chunkKey, final Chunk chunk) {
+        if (chunk == null) {
+            try {
+                writeLock.lock();
+                Long2ObjectMap<ChunkEntry> entries = cachedChunks.get(world);
+                if (entries != null) {
+                    entries.remove(chunkKey);
+                    if (entries.isEmpty()) {
+                        cachedChunks.remove(world);
+                    }
+                }
+            } finally {
+                writeLock.unlock();
+            }
+            return;
+        }
 
-	private List<BlockState> filterTiles(BlockState[] tiles) {
-		if (tiles.length == 0) {
-			return Collections.emptyList();
-		}
+        try {
+            writeLock.lock();
+            ChunkEntry entry = cachedChunks.computeIfAbsent(world, k -> new Long2ObjectOpenHashMap<>()).computeIfAbsent(chunkKey, k -> new ChunkEntry());
+            entry.snapshot = chunk.getChunkSnapshot(false, false, false);
+            entry.tiles = filterTiles(chunk.getTileEntities());
+        } finally {
+            writeLock.unlock();
+        }
+    }
 
-		List<BlockState> result = new LinkedList<>();
-		for (BlockState state : tiles) {
-			if (hiddenTileRegistry.shouldHide(state)) {
-				result.add(state);
-			}
-		}
-		return result;
-	}
+    private List<BlockState> filterTiles(BlockState[] tiles) {
+        if (tiles.length == 0) {
+            return Collections.emptyList();
+        }
 
-	public ChunkSnapshot getChunk(World world, long chunkKey) {
-		try {
-			readLock.lock();
-			Long2ObjectMap<ChunkEntry> entries = cachedChunks.get(world);
-			if (entries == null) {
-				return null;
-			}
-			ChunkEntry entry = entries.get(chunkKey);
-			if (entry == null) {
-				return null;
-			}
-			return entry.snapshot;
-		} finally {
-			readLock.unlock();
-		}
-	}
+        List<BlockState> result = new LinkedList<>();
+        for (BlockState state : tiles) {
+            if (hiddenTileRegistry.shouldHide(state)) {
+                result.add(state);
+            }
+        }
+        return result;
+    }
 
-	public List<BlockState> getChunkTiles(World world, long chunkKey) {
-		try {
-			readLock.lock();
-			Long2ObjectMap<ChunkEntry> entries = cachedChunks.get(world);
-			if (entries == null) {
-				return null;
-			}
-			ChunkEntry entry = entries.get(chunkKey);
-			if (entry == null) {
-				return null;
-			}
-			return entry.tiles;
-		} finally {
-			readLock.unlock();
-		}
-	}
+    public ChunkSnapshot getChunk(World world, long chunkKey) {
+        try {
+            readLock.lock();
+            Long2ObjectMap<ChunkEntry> entries = cachedChunks.get(world);
+            if (entries == null) {
+                return null;
+            }
+            ChunkEntry entry = entries.get(chunkKey);
+            if (entry == null) {
+                return null;
+            }
+            return entry.snapshot;
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+    public List<BlockState> getChunkTiles(World world, long chunkKey) {
+        try {
+            readLock.lock();
+            Long2ObjectMap<ChunkEntry> entries = cachedChunks.get(world);
+            if (entries == null) {
+                return null;
+            }
+            ChunkEntry entry = entries.get(chunkKey);
+            if (entry == null) {
+                return null;
+            }
+            return entry.tiles;
+        } finally {
+            readLock.unlock();
+        }
+    }
 
 }

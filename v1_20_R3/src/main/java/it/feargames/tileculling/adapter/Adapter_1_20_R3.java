@@ -165,7 +165,7 @@ public class Adapter_1_20_R3 implements IAdapter {
         List<WrappedLevelChunkData.BlockEntityInfo> blockTileEntities = data.getBlockEntityInfo();
 
         IntList removedBlocks = null;
-        for (Iterator<WrappedLevelChunkData.BlockEntityInfo> iterator = blockTileEntities.iterator(); iterator.hasNext(); ) {
+        for (Iterator<WrappedLevelChunkData.BlockEntityInfo> iterator = blockTileEntities.iterator(); iterator.hasNext();) {
             WrappedLevelChunkData.BlockEntityInfo tileEntity = iterator.next();
 
             String type = tileEntity.getTypeKey().getKey();
