@@ -32,19 +32,14 @@ public class VisibilityUpdateThread extends Thread {
     @Override
     public void run() {
         while (running.get()) {
-            long start = System.currentTimeMillis();
             for (Player player : Bukkit.getOnlinePlayers()) {
                 chunkTileVisibilityManager.updateVisibility(player);
             }
-            long took = System.currentTimeMillis() - start;
-            long sleep = Math.max(0, TASK_INTERVAL - took);
-            if (sleep > 0) {
-                try {
-                    //noinspection BusyWait
-                    Thread.sleep(sleep);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+
+            try {
+                Thread.sleep(TASK_INTERVAL);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
     }
