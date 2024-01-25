@@ -3,7 +3,6 @@ package it.feargames.tileculling;
 import com.logisticscraft.occlusionculling.OcclusionCullingInstance;
 import com.logisticscraft.occlusionculling.cache.ArrayOcclusionCache;
 import com.logisticscraft.occlusionculling.util.Vec3d;
-import it.feargames.tileculling.adapter.IAdapter;
 import it.feargames.tileculling.occlusionculling.PaperDataProvider;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -15,7 +14,7 @@ import java.util.List;
 
 public class ChunkTileVisibilityManager {
 
-    private final IAdapter adapter;
+    private final NMSUtils nms;
     private final PlayerChunkTracker playerTracker;
     private final VisibilityCache visibilityCache;
     private final ChunkCache chunkCache;
@@ -27,14 +26,14 @@ public class ChunkTileVisibilityManager {
     private final Vec3d aabbMin = new Vec3d(0, 0, 0);
     private final Vec3d aabbMax = new Vec3d(0, 0, 0);
 
-    public ChunkTileVisibilityManager(SettingsHolder settings, IAdapter adapter, PlayerChunkTracker playerTracker, VisibilityCache visibilityCache, ChunkCache chunkCache) {
-        this.adapter = adapter;
+    public ChunkTileVisibilityManager(SettingsHolder settings, NMSUtils nms, PlayerChunkTracker playerTracker, VisibilityCache visibilityCache, ChunkCache chunkCache) {
+        this.nms = nms;
         this.playerTracker = playerTracker;
         this.visibilityCache = visibilityCache;
         this.chunkCache = chunkCache;
 
         dataProvider = new PaperDataProvider(chunkCache);
-        culling = new OcclusionCullingInstance(settings.getTileRange(), dataProvider, new ArrayOcclusionCache(settings.getTileRange()), -0.1);
+        culling = new OcclusionCullingInstance(settings.getTileRange(), dataProvider, new ArrayOcclusionCache(settings.getTileRange()), -0.01);
     }
 
     public void updateVisibility(Player player) {
@@ -47,52 +46,68 @@ public class ChunkTileVisibilityManager {
         dataProvider.setWorld(world);
 
         long[] trackedChunks = playerTracker.getTrackedChunks(player);
+
         if (trackedChunks == null) {
             return;
         }
+
         for (long chunkKey : trackedChunks) {
             List<BlockState> tiles = chunkCache.getChunkTiles(world, chunkKey);
+
             if (tiles == null) {
                 continue;
             }
+
             for (BlockState block : tiles) {
                 aabbMin.set(block.getX(), block.getY(), block.getZ());
                 aabbMax.set(block.getX() + 1, block.getY() + 1, block.getZ() + 1);
-                Location bloc = block.getLocation();
+                Location bLoc = block.getLocation();
+
                 boolean canSee = culling.isAABBVisible(aabbMin, aabbMax, viewerPosition);
-                boolean hidden = visibilityCache.isHidden(player, bloc);
+                boolean hidden = visibilityCache.isHidden(player, bLoc);
+
                 if (hidden && canSee) {
-                    visibilityCache.setHidden(player, bloc, false);
-                    adapter.updateBlockState(player, bloc, block.getBlockData());
+                    nms.updateBlockState(player, bLoc, block.getBlockData());
+                    visibilityCache.setHidden(player, bLoc, false);
+
                     if (block instanceof TileState) {
-                        adapter.updateBlockData(player, bloc, block);
+                        nms.updateBlockData(player, bLoc, block);
                     }
-                } else if (!hidden && !canSee) {
-                    visibilityCache.setHidden(player, bloc, true);
-                    adapter.updateBlockState(player, bloc, null);
+
+                    continue;
+                }
+
+                if (!hidden && !canSee) {
+                    nms.updateBlockState(player, bLoc, null);
+                    visibilityCache.setHidden(player, bLoc, true);
                 }
             }
         }
 
-        // Prevent memory leak
         dataProvider.setWorld(null);
     }
 
     public void restoreVisibility(Player player) {
-        World world = player.getWorld();
         long[] trackedChunks = playerTracker.getTrackedChunks(player);
+
         if (trackedChunks == null) {
             return;
         }
+
+        World world = player.getWorld();
+
         for (long chunkKey : trackedChunks) {
             List<BlockState> tiles = chunkCache.getChunkTiles(world, chunkKey);
+
             if (tiles == null) {
                 continue;
             }
+
             for (BlockState block : tiles) {
-                Location bloc = block.getLocation();
-                adapter.updateBlockState(player, bloc, block.getBlockData());
-                adapter.updateBlockData(player, bloc, block);
+                Location bLoc = block.getLocation();
+
+                nms.updateBlockState(player, bLoc, block.getBlockData());
+                nms.updateBlockData(player, bLoc, block);
             }
         }
     }
