@@ -1,6 +1,6 @@
 package it.feargames.tileculling;
 
-import it.feargames.tileculling.util.LocationUtilities;
+import it.feargames.tileculling.util.BlockUtils;
 import it.unimi.dsi.fastutil.longs.Long2BooleanMap;
 import it.unimi.dsi.fastutil.longs.Long2BooleanOpenHashMap;
 import org.bukkit.Location;
@@ -39,7 +39,7 @@ public class VisibilityCache implements Listener {
     }
 
     public void setHidden(Player player, Location blockLocation, boolean hidden) {
-        setHidden(player, LocationUtilities.getBlockKey(blockLocation), hidden);
+        setHidden(player, BlockUtils.getBlockKey(blockLocation), hidden);
     }
 
     public boolean isHidden(Player player, long blockKey) {
@@ -47,19 +47,22 @@ public class VisibilityCache implements Listener {
             readLock.lock();
             Long2BooleanMap blocks = hiddenBlocks.get(player);
             boolean result;
+
             if (blocks == null) {
                 result = true;
             } else {
                 result = blocks.getOrDefault(blockKey, true);
             }
+
             return result;
         } finally {
             readLock.unlock();
         }
+
     }
 
     public boolean isHidden(Player player, Location blockLocation) {
-        return isHidden(player, LocationUtilities.getBlockKey(blockLocation));
+        return isHidden(player, BlockUtils.getBlockKey(blockLocation));
     }
 
     @EventHandler
@@ -73,11 +76,11 @@ public class VisibilityCache implements Listener {
             writeLock.lock();
             for (Long2BooleanMap blocks : hiddenBlocks.values()) {
                 blocks.keySet().removeIf((LongPredicate) block -> {
-                    int chunkX = LocationUtilities.getBlockKeyX(block) >> 4;
+                    int chunkX = BlockUtils.getBlockKeyX(block) >> 4;
                     if (event.getChunk().getX() != chunkX) {
                         return false;
                     }
-                    int chunkZ = LocationUtilities.getBlockKeyZ(block) >> 4;
+                    int chunkZ = BlockUtils.getBlockKeyZ(block) >> 4;
                     return event.getChunk().getZ() == chunkZ;
                 });
             }
