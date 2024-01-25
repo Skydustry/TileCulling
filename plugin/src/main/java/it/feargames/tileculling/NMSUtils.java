@@ -1,10 +1,10 @@
-package it.feargames.tileculling.adapter;
+package it.feargames.tileculling;
 
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.WrappedLevelChunkData;
 import io.netty.buffer.Unpooled;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -28,46 +28,56 @@ import org.bukkit.craftbukkit.v1_20_R3.block.data.CraftBlockData;
 import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.chunk.PalettedContainer;
+import org.bukkit.ChunkSnapshot;
+import org.bukkit.craftbukkit.v1_20_R3.CraftChunkSnapshot;
 
-public class Adapter_1_20_R3 implements IAdapter {
+public class NMSUtils {
 
-    private static final Constructor<ClientboundBlockEntityDataPacket> BLOCK_ENTITY_DATA_PACKET_CONSTRUCTOR;
+    private final Constructor<ClientboundBlockEntityDataPacket> BLOCK_ENTITY_DATA_PACKET_CONSTRUCTOR;
+    private final Field PALETTED_CONTAINER_FIELD;
 
-    static {
+    private final static BlockState AIR_BLOCK = Blocks.AIR.defaultBlockState();
+
+    public NMSUtils() {
         try {
             BLOCK_ENTITY_DATA_PACKET_CONSTRUCTOR = ClientboundBlockEntityDataPacket.class.getDeclaredConstructor(
                     BlockPos.class, BlockEntityType.class, CompoundTag.class);
             BLOCK_ENTITY_DATA_PACKET_CONSTRUCTOR.setAccessible(true);
+
+            PALETTED_CONTAINER_FIELD = CraftChunkSnapshot.class.getDeclaredField("blockids");
+            PALETTED_CONTAINER_FIELD.setAccessible(true);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    @Override
     public void updateBlockState(Player player, Location location, BlockData blockData) {
         CraftPlayer craftPlayer = (CraftPlayer) player;
         ServerPlayer handlePlayer = craftPlayer.getHandle();
         ServerPlayerConnection connection = handlePlayer.connection;
+
         if (connection == null) {
             return;
         }
 
         BlockPos blockPosition = new BlockPos(location.getBlockX(), location.getBlockY(), location.getBlockZ());
-        BlockState handleData = blockData == null ? Blocks.AIR.defaultBlockState() : ((CraftBlockData) blockData).getState();
+        BlockState handleData = blockData == null ? AIR_BLOCK : ((CraftBlockData) blockData).getState();
         ClientboundBlockUpdatePacket blockChange = new ClientboundBlockUpdatePacket(blockPosition, handleData);
         connection.send(blockChange);
     }
 
-    @Override
     public void updateBlockData(Player player, Location location, org.bukkit.block.BlockState block) {
         CraftPlayer craftPlayer = (CraftPlayer) player;
         ServerPlayer handlePlayer = craftPlayer.getHandle();
         ServerPlayerConnection connection = handlePlayer.connection;
+
         if (connection == null) {
             return;
         }
@@ -139,6 +149,8 @@ public class Adapter_1_20_R3 implements IAdapter {
             type = BlockEntityType.SCULK_CATALYST;
         } else if (block instanceof SculkShrieker) {
             type = BlockEntityType.SCULK_SHRIEKER;
+        } else if (block instanceof BrushableBlock) {
+            type = BlockEntityType.BRUSHABLE_BLOCK;
         } else {
             return;
         }
@@ -147,16 +159,17 @@ public class Adapter_1_20_R3 implements IAdapter {
         CompoundTag nbt = craftBlockEntityState.getSnapshotNBT();
         BlockPos blockPosition = new BlockPos(location.getBlockX(), location.getBlockY(), location.getBlockZ());
         ClientboundBlockEntityDataPacket packet;
+
         try {
             packet = BLOCK_ENTITY_DATA_PACKET_CONSTRUCTOR.newInstance(blockPosition, type, nbt);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
+
         connection.send(packet);
     }
 
-    @Override
-    public void transformPacket(Player player, PacketContainer container, Function<String, Boolean> tileEntityTypeFilter) {
+    public void transformPacket(Player player, PacketContainer container, int chunkX, int chunkZ, Function<String, Boolean> tileEntityTypeFilter) {
         CraftWorld craftWorld = (CraftWorld) player.getWorld();
         ServerLevel vanillaWorld = craftWorld.getHandle();
 
@@ -164,7 +177,7 @@ public class Adapter_1_20_R3 implements IAdapter {
 
         List<WrappedLevelChunkData.BlockEntityInfo> blockTileEntities = data.getBlockEntityInfo();
 
-        IntList removedBlocks = null;
+        IntSet removedBlocks = null;
         for (Iterator<WrappedLevelChunkData.BlockEntityInfo> iterator = blockTileEntities.iterator(); iterator.hasNext();) {
             WrappedLevelChunkData.BlockEntityInfo tileEntity = iterator.next();
 
@@ -176,7 +189,7 @@ public class Adapter_1_20_R3 implements IAdapter {
             iterator.remove();
 
             if (removedBlocks == null) {
-                removedBlocks = new IntArrayList();
+                removedBlocks = new IntOpenHashSet();
             }
 
             short y = (short) tileEntity.getY();
@@ -199,18 +212,20 @@ public class Adapter_1_20_R3 implements IAdapter {
         int bufferSize = 0;
         LevelChunkSection[] sections = new LevelChunkSection[vanillaWorld.getSectionsCount()];
         for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
-            int yOffset = vanillaWorld.getSectionYFromSectionIndex(sectionIndex);
             LevelChunkSection section = new LevelChunkSection(vanillaWorld.registryAccess().registryOrThrow(Registries.BIOME));
             section.read(reader);
 
+            int yOffset = vanillaWorld.getSectionYFromSectionIndex(sectionIndex);
             for (byte y = 0; y < 16; y++) {
                 for (byte z = 0; z < 16; z++) {
                     for (byte x = 0; x < 16; x++) {
-                        int key = ((yOffset + y) & 0xFFFF) | ((x & 0xF) << 16) | ((z & 0xF) << 20);
+                        int key = (((yOffset << 4) + y) & 0xFFFF) | ((x & 0xF) << 16) | ((z & 0xF) << 20);
+
                         if (!removedBlocks.contains(key)) {
                             continue;
                         }
-                        section.setBlockState(x, y, z, Blocks.AIR.defaultBlockState(), false);
+
+                        section.setBlockState(x, y, z, AIR_BLOCK, false);
                     }
                 }
             }
@@ -230,5 +245,17 @@ public class Adapter_1_20_R3 implements IAdapter {
         data.setBuffer(writerBuffer);
 
         container.getLevelChunkData().write(0, data);
+    }
+
+    public PalettedContainer<BlockState>[] getBlockIds(ChunkSnapshot snapshot) {
+        CraftChunkSnapshot craftSnapshot = (CraftChunkSnapshot) snapshot;
+
+        try {
+            return (PalettedContainer<BlockState>[]) PALETTED_CONTAINER_FIELD.get(craftSnapshot);
+        } catch (IllegalAccessException ex) {
+            ex.printStackTrace();
+        }
+
+        return null;
     }
 }
