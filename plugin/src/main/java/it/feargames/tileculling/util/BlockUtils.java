@@ -1,20 +1,11 @@
 package it.feargames.tileculling.util;
 
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 
-public final class LocationUtilities {
+public final class BlockUtils {
 
-    private LocationUtilities() {
-    }
-
-    public static long getChunkKey(Chunk chunk) {
-        return getChunkKey(chunk.getX(), chunk.getZ());
-    }
-
-    public static long getChunkKey(int x, int z) {
-        return (long) x & 0xffffffffL | ((long) z & 0xffffffffL) << 32;
+    private BlockUtils() {
     }
 
     public static long getBlockKey(Block block) {
