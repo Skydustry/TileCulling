@@ -4,24 +4,22 @@ import com.logisticscraft.occlusionculling.DataProvider;
 import com.logisticscraft.occlusionculling.util.Vec3d;
 import it.feargames.tileculling.ChunkCache;
 import it.feargames.tileculling.CullingPlugin;
-import it.feargames.tileculling.util.LocationUtilities;
-import org.bukkit.ChunkSnapshot;
+import net.minecraft.world.level.chunk.PalettedContainer;
+import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.craftbukkit.v1_20_R3.util.CraftMagicNumbers;
 
 public class PaperDataProvider implements DataProvider {
 
     private final ChunkCache chunkCache;
 
     private World world;
-    private ChunkSnapshot snapshot;
+    private long chunkKey;
+    private PalettedContainer<net.minecraft.world.level.block.state.BlockState>[] blockIds;
 
     public PaperDataProvider(ChunkCache chunkCache) {
         this.chunkCache = chunkCache;
-    }
-
-    public void setWorld(World world) {
-        this.world = world;
     }
 
     @Override
@@ -29,35 +27,43 @@ public class PaperDataProvider implements DataProvider {
         if (world == null) {
             throw new IllegalStateException("World not loaded into DataProvider!");
         }
-        if (snapshot != null && chunkX == snapshot.getX() && chunkZ == snapshot.getZ()) {
-            return true; // Already cached
+
+        if (chunkKey == Chunk.getChunkKey(chunkX, chunkZ)) {
+            return true;
         }
 
-        long chunkKey = LocationUtilities.getChunkKey(chunkX, chunkZ);
-        snapshot = chunkCache.getChunk(world, chunkKey);
-        return snapshot != null;
+        chunkKey = Chunk.getChunkKey(chunkX, chunkZ);
+        blockIds = chunkCache.getBlocks(world, chunkKey);
+        return blockIds != null;
     }
 
     @Override
     public boolean isOpaqueFullCube(int x, int y, int z) {
-        if (snapshot == null) {
+        if (blockIds == null) {
             throw new IllegalStateException("Chunk not loaded into DataProvider!");
         }
+
         if (y < world.getMinHeight() || y > world.getMaxHeight()) {
             return false;
         }
+
         int relativeX = x & 0xF;
         int relativeZ = z & 0xF;
-        Material material = snapshot.getBlockType(relativeX, y, relativeZ);
+        Material material = CraftMagicNumbers.getMaterial(blockIds[(y + 64) >> 4].get(relativeX, y & 0xF, relativeZ).getBlock());
         return CullingPlugin.isOccluding(material);
     }
 
     @Override
     public void cleanup() {
-        snapshot = null;
+        this.chunkKey = 0;
+        this.blockIds = null;
     }
 
     @Override
     public void checkingPosition(Vec3d[] targetPoints, int size, Vec3d viewerPosition) {
+    }
+
+    public void setWorld(World world) {
+        this.world = world;
     }
 }
