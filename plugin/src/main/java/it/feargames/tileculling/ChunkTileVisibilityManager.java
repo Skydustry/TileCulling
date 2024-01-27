@@ -1,5 +1,6 @@
 package it.feargames.tileculling;
 
+import it.feargames.tileculling.util.NMSUtils;
 import com.logisticscraft.occlusionculling.OcclusionCullingInstance;
 import com.logisticscraft.occlusionculling.cache.ArrayOcclusionCache;
 import com.logisticscraft.occlusionculling.util.Vec3d;
@@ -85,30 +86,5 @@ public class ChunkTileVisibilityManager {
         }
 
         dataProvider.setWorld(null);
-    }
-
-    public void restoreVisibility(Player player) {
-        long[] trackedChunks = playerTracker.getTrackedChunks(player);
-
-        if (trackedChunks == null) {
-            return;
-        }
-
-        World world = player.getWorld();
-
-        for (long chunkKey : trackedChunks) {
-            List<BlockState> tiles = chunkCache.getChunkTiles(world, chunkKey);
-
-            if (tiles == null) {
-                continue;
-            }
-
-            for (BlockState block : tiles) {
-                Location bLoc = block.getLocation();
-
-                nms.updateBlockState(player, bLoc, block.getBlockData());
-                nms.updateBlockData(player, bLoc, block);
-            }
-        }
     }
 }

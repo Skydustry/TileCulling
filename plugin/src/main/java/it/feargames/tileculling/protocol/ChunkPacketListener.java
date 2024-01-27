@@ -2,7 +2,7 @@ package it.feargames.tileculling.protocol;
 
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.*;
-import it.feargames.tileculling.NMSUtils;
+import it.feargames.tileculling.util.NMSUtils;
 import it.feargames.tileculling.CullingPlugin;
 import it.feargames.tileculling.HiddenTileRegistry;
 import it.feargames.tileculling.PlayerChunkTracker;

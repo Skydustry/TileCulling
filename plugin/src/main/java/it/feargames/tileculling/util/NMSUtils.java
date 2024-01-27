@@ -1,4 +1,4 @@
-package it.feargames.tileculling;
+package it.feargames.tileculling.util;
 
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.WrappedLevelChunkData;
