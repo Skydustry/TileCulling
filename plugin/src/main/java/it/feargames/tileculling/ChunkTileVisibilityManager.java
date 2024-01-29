@@ -38,6 +38,12 @@ public class ChunkTileVisibilityManager {
     }
 
     public void updateVisibility(Player player) {
+        long[] trackedChunks = playerTracker.getTrackedChunks(player);
+
+        if (trackedChunks == null) {
+            return;
+        }
+
         World world = player.getWorld();
         Location playerEyeLocation = player.getEyeLocation();
 
@@ -45,12 +51,6 @@ public class ChunkTileVisibilityManager {
 
         culling.resetCache();
         dataProvider.setWorld(world);
-
-        long[] trackedChunks = playerTracker.getTrackedChunks(player);
-
-        if (trackedChunks == null) {
-            return;
-        }
 
         for (long chunkKey : trackedChunks) {
             List<BlockState> tiles = chunkCache.getChunkTiles(world, chunkKey);

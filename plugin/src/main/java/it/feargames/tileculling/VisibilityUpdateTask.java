@@ -19,7 +19,7 @@ public class VisibilityUpdateTask implements Runnable {
 
     public void start(CullingPlugin plugin) {
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
-        scheduler.runTaskTimerAsynchronously(plugin, this, 20L, TASK_INTERVAL);
+        scheduler.runTaskTimerAsynchronously(plugin, this, 60L, TASK_INTERVAL);
     }
 
     @Override

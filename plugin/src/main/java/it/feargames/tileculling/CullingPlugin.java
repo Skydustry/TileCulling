@@ -5,7 +5,6 @@ import com.comphenix.protocol.ProtocolLibrary;
 import it.feargames.tileculling.protocol.ChunkPacketListener;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class CullingPlugin extends JavaPlugin {
@@ -31,7 +30,7 @@ public class CullingPlugin extends JavaPlugin {
         hiddenTileRegistry = new HiddenTileRegistry(getLogger());
         hiddenTileRegistry.load(getConfig().getConfigurationSection("hiddenTiles"));
 
-        playerChunkTracker = new PlayerChunkTracker(this);
+        playerChunkTracker = new PlayerChunkTracker();
         visibilityCache = new VisibilityCache();
         nms = new NMSUtils();
         chunkCache = new ChunkCache(this, hiddenTileRegistry, nms);

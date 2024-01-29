@@ -19,7 +19,7 @@ public class PlayerChunkTracker implements Listener {
     private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
     private final Map<Player, LongSet> trackedPlayers;
 
-    public PlayerChunkTracker(CullingPlugin plugin) {
+    public PlayerChunkTracker() {
         trackedPlayers = new HashMap<>();
     }
 
