@@ -258,7 +258,7 @@ public class NMSUtils {
 
         for (int i = 0; i < cs.length; i++) {
             if (!cs[i].hasOnlyAir()) {
-                sectionBlockIDs[i] = cs[i].getStates().copy();
+                sectionBlockIDs[i] = cs[i].getStates();
             } else {
                 try {
                     sectionBlockIDs[i] = (PalettedContainer) CRAFT_CHUNK_EMPTY_BLOCK_IDS.get(craftChunk);
