@@ -23,15 +23,17 @@ import net.minecraft.server.network.ServerPlayerConnection;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
-import org.bukkit.ChunkSnapshot;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.*;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Bed;
-import org.bukkit.craftbukkit.v1_20_R3.CraftChunkSnapshot;
+import org.bukkit.craftbukkit.v1_20_R3.CraftChunk;
 import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
 import org.bukkit.craftbukkit.v1_20_R3.block.CraftBlockEntityState;
 import org.bukkit.craftbukkit.v1_20_R3.block.data.CraftBlockData;
@@ -41,7 +43,7 @@ import org.bukkit.entity.Player;
 public class NMSUtils {
 
     private final Constructor<ClientboundBlockEntityDataPacket> BLOCK_ENTITY_DATA_PACKET_CONSTRUCTOR;
-    private final Field PALETTED_CONTAINER_FIELD;
+    private final Field CRAFT_CHUNK_EMPTY_BLOCK_IDS;
 
     private final static BlockState AIR_BLOCK = Blocks.AIR.defaultBlockState();
 
@@ -51,8 +53,8 @@ public class NMSUtils {
                     BlockPos.class, BlockEntityType.class, CompoundTag.class);
             BLOCK_ENTITY_DATA_PACKET_CONSTRUCTOR.setAccessible(true);
 
-            PALETTED_CONTAINER_FIELD = CraftChunkSnapshot.class.getDeclaredField("blockids");
-            PALETTED_CONTAINER_FIELD.setAccessible(true);
+            CRAFT_CHUNK_EMPTY_BLOCK_IDS = CraftChunk.class.getDeclaredField("emptyBlockIDs");
+            CRAFT_CHUNK_EMPTY_BLOCK_IDS.setAccessible(true);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -247,15 +249,25 @@ public class NMSUtils {
         container.getLevelChunkData().write(0, data);
     }
 
-    public PalettedContainer<BlockState>[] getBlockIds(ChunkSnapshot snapshot) {
-        CraftChunkSnapshot craftSnapshot = (CraftChunkSnapshot) snapshot;
+    public PalettedContainer<BlockState>[] getBlockIds(Chunk chunk) {
+        CraftChunk craftChunk = (CraftChunk) chunk;
+        ChunkAccess chunkAccess = craftChunk.getHandle(ChunkStatus.BIOMES);
 
-        try {
-            return (PalettedContainer<BlockState>[]) PALETTED_CONTAINER_FIELD.get(craftSnapshot);
-        } catch (IllegalAccessException ex) {
-            ex.printStackTrace();
+        LevelChunkSection[] cs = chunkAccess.getSections();
+        PalettedContainer[] sectionBlockIDs = new PalettedContainer[cs.length];
+
+        for (int i = 0; i < cs.length; i++) {
+            if (!cs[i].hasOnlyAir()) {
+                sectionBlockIDs[i] = cs[i].getStates().copy();
+            } else {
+                try {
+                    sectionBlockIDs[i] = (PalettedContainer) CRAFT_CHUNK_EMPTY_BLOCK_IDS.get(craftChunk);
+                } catch (IllegalAccessException ex) {
+                    // Shouldn't happen
+                }
+            }
         }
 
-        return null;
+        return sectionBlockIDs;
     }
 }

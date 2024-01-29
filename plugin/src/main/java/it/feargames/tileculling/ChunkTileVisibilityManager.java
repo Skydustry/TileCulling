@@ -60,8 +60,12 @@ public class ChunkTileVisibilityManager {
             }
 
             for (BlockState block : tiles) {
-                aabbMin.set(block.getX(), block.getY(), block.getZ());
-                aabbMax.set(block.getX() + 1, block.getY() + 1, block.getZ() + 1);
+                int blockX = block.getX();
+                int blockY = block.getY();
+                int blockZ = block.getZ();
+
+                aabbMin.set(blockX, blockY, blockZ);
+                aabbMax.set(blockX + 1, blockY + 1, blockZ + 1);
                 Location bLoc = block.getLocation();
 
                 boolean canSee = culling.isAABBVisible(aabbMin, aabbMax, viewerPosition);

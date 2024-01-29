@@ -3,9 +3,13 @@ package it.feargames.tileculling;
 import it.feargames.tileculling.util.NMSUtils;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import java.util.*;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import net.minecraft.world.level.chunk.PalettedContainer;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -18,11 +22,6 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.scheduler.BukkitRunnable;
-
-import java.util.*;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import net.minecraft.world.level.chunk.PalettedContainer;
-import org.bukkit.block.BlockState;
 
 public class ChunkCache implements Listener {
 
@@ -137,7 +136,7 @@ public class ChunkCache implements Listener {
         try {
             writeLock.lock();
             ChunkEntry entry = cachedChunks.computeIfAbsent(world, k -> new Long2ObjectOpenHashMap<>()).computeIfAbsent(chunkKey, k -> new ChunkEntry());
-            entry.blocks = nms.getBlockIds(chunk.getChunkSnapshot(false, false, false));
+            entry.blocks = nms.getBlockIds(chunk);
             entry.tiles = filterTiles(chunk.getTileEntities());
         } finally {
             writeLock.unlock();
