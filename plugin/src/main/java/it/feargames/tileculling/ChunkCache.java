@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import net.minecraft.world.level.chunk.PalettedContainer;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -52,7 +53,9 @@ public class ChunkCache implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent e) {
         Block b = e.getBlock();
-        if (!CullingPlugin.isOccluding(b.getType())) {
+        Material type = b.getType();
+
+        if (!CullingPlugin.isOccluding(type) && !hiddenTileRegistry.shouldHide(type)) {
             return;
         }
 
@@ -65,7 +68,9 @@ public class ChunkCache implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent e) {
         Block b = e.getBlock();
-        if (!CullingPlugin.isOccluding(b.getType())) {
+        Material type = b.getType();
+
+        if (!CullingPlugin.isOccluding(type) && !hiddenTileRegistry.shouldHide(type)) {
             return;
         }
 
