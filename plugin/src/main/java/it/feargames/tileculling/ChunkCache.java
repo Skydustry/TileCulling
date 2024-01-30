@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import net.minecraft.world.level.chunk.PalettedContainer;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -16,12 +17,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 
 public class ChunkCache implements Listener {
 
@@ -41,7 +40,6 @@ public class ChunkCache implements Listener {
     }
 
     static class ChunkEntry {
-
         PalettedContainer<net.minecraft.world.level.block.state.BlockState>[] blocks;
         List<BlockState> tiles;
     }
@@ -53,35 +51,28 @@ public class ChunkCache implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent e) {
-        Chunk chunk = e.getBlock().getChunk();
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                updateCachedChunkSync(chunk.getWorld(), chunk.getChunkKey(), chunk);
-            }
-        }.runTask(plugin);
+        Block b = e.getBlock();
+        if (!CullingPlugin.isOccluding(b.getType())) {
+            return;
+        }
+
+        Chunk chunk = b.getChunk();
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            updateCachedChunkSync(chunk.getWorld(), chunk.getChunkKey(), chunk);
+        });
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent e) {
-        Chunk chunk = e.getBlock().getChunk();
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                updateCachedChunkSync(chunk.getWorld(), chunk.getChunkKey(), chunk);
-            }
-        }.runTask(plugin);
-    }
+        Block b = e.getBlock();
+        if (!CullingPlugin.isOccluding(b.getType())) {
+            return;
+        }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onSignUpdate(SignChangeEvent e) {
-        Chunk chunk = e.getBlock().getChunk();
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                updateCachedChunkSync(chunk.getWorld(), chunk.getChunkKey(), chunk);
-            }
-        }.runTask(plugin);
+        Chunk chunk = b.getChunk();
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            updateCachedChunkSync(chunk.getWorld(), chunk.getChunkKey(), chunk);
+        });
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
