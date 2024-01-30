@@ -66,11 +66,6 @@ public class VisibilityCache implements Listener {
     }
 
     @EventHandler
-    public void onQuit(PlayerQuitEvent event) {
-        invalidateCache(event.getPlayer());
-    }
-
-    @EventHandler
     public void onUnload(ChunkUnloadEvent event) {
         try {
             writeLock.lock();
@@ -105,6 +100,11 @@ public class VisibilityCache implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onTeleport(PlayerTeleportEvent event) {
+        invalidateCache(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
         invalidateCache(event.getPlayer());
     }
 }
