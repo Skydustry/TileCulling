@@ -1,21 +1,26 @@
 settings:
-  tileRange: 64
+  tileRange: 48
 hiddenTiles:
   materials:
-    # Inventory holders
     - CHEST
-    - TRAPPED_CHEST
+    - BARREL
     - FURNACE
+    - HOPPER
+    - ENDER_CHEST
+    - TRAPPED_CHEST
+    - BLAST_FURNACE
+    - CAMPFIRE
     - DISPENSER
     - DROPPER
-    - HOPPER
     - BREWING_STAND
-    - BARREL
-    # Misc
     - SPAWNER
     - ENCHANTING_TABLE
-    - ENDER_CHEST
-    # Skulls
+    - DRAGON_HEAD
+    - DRAGON_WALL_HEAD
+    - PLAYER_HEAD
+    - PLAYER_WALL_HEAD
+    - SUSPICIOUS_GRAVEL
+    - SUSPICIOUS_SAND
     - SKELETON_SKULL
     - SKELETON_WALL_SKULL
     - WITHER_SKELETON_SKULL
@@ -24,10 +29,12 @@ hiddenTiles:
     - ZOMBIE_WALL_HEAD
     - CREEPER_HEAD
     - CREEPER_WALL_HEAD
-    - DRAGON_HEAD
-    - DRAGON_WALL_HEAD
-    - PLAYER_HEAD
-    - PLAYER_WALL_HEAD
   tags:
     - SHULKER_BOXES
-    - SIGNS
+    - ALL_SIGNS
+    - BEDS
+  # NMS keys (skull/banner/bed/brushable_block) are needed to hide some types of blocks when sending chunks to the client
+  keys:
+    - brushable_block
+    - bed
+    - skull

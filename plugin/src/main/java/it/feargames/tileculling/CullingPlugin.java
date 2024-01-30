@@ -5,6 +5,7 @@ import com.comphenix.protocol.ProtocolLibrary;
 import it.feargames.tileculling.protocol.ChunkPacketListener;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class CullingPlugin extends JavaPlugin {
@@ -62,14 +63,22 @@ public class CullingPlugin extends JavaPlugin {
     }
 
     public static boolean isOccluding(Material material) {
+        if (Tag.SHULKER_BOXES.isTagged(material)) {
+            return false;
+        }
+
         switch (material) {
             case BARREL:
+            case FURNACE:
+            case BLAST_FURNACE:
             case BARRIER:
             case SPAWNER:
             case SUSPICIOUS_GRAVEL:
             case SUSPICIOUS_SAND:
                 return false;
+            default: {
+                return material.isOccluding();
+            }
         }
-        return material.isOccluding();
     }
 }

@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.BlockState;
@@ -22,9 +23,11 @@ public class HiddenTileRegistry {
 
     public void load(ConfigurationSection config) {
         Set<Material> materials = new HashSet<>();
+        Set<String> keys = new HashSet<>();
 
         for (String materialName : config.getStringList("materials")) {
             Material material = Material.getMaterial(materialName);
+
             if (material == null || !material.isBlock()) {
                 logger.warning("Material " + materialName + " is invalid!");
                 continue;
@@ -35,6 +38,7 @@ public class HiddenTileRegistry {
 
         for (String tagName : config.getStringList("tags")) {
             Tag<?> tag;
+
             try {
                 tag = (Tag<?>) Tag.class.getDeclaredField(tagName).get(null);
             } catch (NoSuchFieldException e) {
@@ -51,14 +55,22 @@ public class HiddenTileRegistry {
             Tag<Material> blockTag = (Tag<Material>) tag;
             materials.addAll(blockTag.getValues());
         }
-        load(materials);
+
+        for (String key : config.getStringList("keys")) {
+            keys.add(key);
+        }
+
+        load(materials, keys);
     }
 
-    public void load(Collection<Material> materials) {
+    public void load(Collection<Material> materials, Collection<String> keys) {
         hiddenMaterials = materials.toArray(new Material[0]);
-        hiddenNamespaces = materials.stream().map(material -> material.getKey().toString()).toArray(String[]::new);
+        hiddenNamespaces = Stream.concat(
+                materials.stream().map(material -> material.getKey().getKey()),
+                keys.stream()
+        ).toArray(String[]::new);
 
-        logger.info("Loaded " + materials.size() + " hidden tile types");
+        logger.info(() -> "Loaded " + materials.size() + " hidden tile types and " + keys.size() + " keys");
     }
 
     public boolean shouldHide(String namespacedKey) {
@@ -67,8 +79,8 @@ public class HiddenTileRegistry {
                 return true;
             }
         }
-        return true;
 
+        return false;
     }
 
     public boolean shouldHide(Material material) {
@@ -77,7 +89,8 @@ public class HiddenTileRegistry {
                 return true;
             }
         }
-        return true;
+
+        return false;
     }
 
     public boolean shouldHide(BlockState state) {
