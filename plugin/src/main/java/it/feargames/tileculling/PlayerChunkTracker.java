@@ -17,6 +17,7 @@ public class PlayerChunkTracker implements Listener {
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
+    private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
     private final Map<Player, LongSet> trackedPlayers;
 
     public PlayerChunkTracker() {
@@ -68,17 +69,17 @@ public class PlayerChunkTracker implements Listener {
     }
 
     public long[] getTrackedChunks(Player player) {
-        LongSet trackedChunks = trackedPlayers.get(player);
-
-        if (trackedChunks == null) {
-            return null;
-        }
-
         try {
+            readLock.lock();
+            LongSet trackedChunks = trackedPlayers.get(player);
+
+            if (trackedChunks == null) {
+                return null;
+            }
+
             return trackedChunks.toArray(new long[0]);
-        } catch (NullPointerException ex) {
-            ex.printStackTrace();
-            return null;
+        } finally {
+            readLock.unlock();
         }
     }
 }
