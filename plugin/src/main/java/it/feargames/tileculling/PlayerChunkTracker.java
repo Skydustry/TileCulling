@@ -36,9 +36,11 @@ public class PlayerChunkTracker implements Listener {
         try {
             writeLock.lock();
             LongSet chunkKeys = trackedPlayers.get(player);
+
             if (chunkKeys == null) {
                 return;
             }
+
             chunkKeys.remove(chunkKey);
         } finally {
             writeLock.unlock();
@@ -72,6 +74,11 @@ public class PlayerChunkTracker implements Listener {
             return null;
         }
 
-        return trackedChunks.toArray(new long[0]);
+        try {
+            return trackedChunks.toArray(new long[0]);
+        } catch (NullPointerException ex) {
+            ex.printStackTrace();
+            return null;
+        }
     }
 }
