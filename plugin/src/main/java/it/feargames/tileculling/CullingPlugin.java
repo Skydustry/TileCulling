@@ -63,22 +63,17 @@ public class CullingPlugin extends JavaPlugin {
     }
 
     public static boolean isOccluding(Material material) {
+        switch (material) {
+            case BARREL, FURNACE, BLAST_FURNACE, BARRIER, 
+                 SPAWNER, SUSPICIOUS_GRAVEL, SUSPICIOUS_SAND -> {
+                return false;
+            }
+        }
+
         if (Tag.SHULKER_BOXES.isTagged(material)) {
             return false;
         }
 
-        switch (material) {
-            case BARREL:
-            case FURNACE:
-            case BLAST_FURNACE:
-            case BARRIER:
-            case SPAWNER:
-            case SUSPICIOUS_GRAVEL:
-            case SUSPICIOUS_SAND:
-                return false;
-            default: {
-                return material.isOccluding();
-            }
-        }
+        return material.isOccluding();
     }
 }

@@ -64,7 +64,7 @@ public class HiddenTileRegistry {
     }
 
     public void load(Collection<Material> materials, Collection<String> keys) {
-        hiddenMaterials = materials.toArray(new Material[0]);
+        hiddenMaterials = materials.toArray(Material[]::new);
         hiddenNamespaces = Stream.concat(
                 materials.stream().map(material -> material.getKey().getKey()),
                 keys.stream()
