@@ -5,7 +5,6 @@ import com.comphenix.protocol.ProtocolLibrary;
 import it.feargames.tileculling.protocol.ChunkPacketListener;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.Tag;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class CullingPlugin extends JavaPlugin {
@@ -70,10 +69,9 @@ public class CullingPlugin extends JavaPlugin {
             }
         }
 
-        if (Tag.SHULKER_BOXES.isTagged(material)) {
-            return false;
-        }
-
+//      if (Tag.SHULKER_BOXES.isTagged(material)) {
+//          return false;
+//      }
         return material.isOccluding();
     }
 }

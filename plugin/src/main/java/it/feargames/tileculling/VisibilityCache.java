@@ -3,6 +3,11 @@ package it.feargames.tileculling;
 import it.feargames.tileculling.util.BlockUtils;
 import it.unimi.dsi.fastutil.longs.Long2BooleanMap;
 import it.unimi.dsi.fastutil.longs.Long2BooleanOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import java.util.UUID;
+import java.util.concurrent.locks.StampedLock;
+import java.util.function.LongPredicate;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,28 +18,22 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
-import java.util.function.LongPredicate;
-
 public class VisibilityCache implements Listener {
 
-    private final Map<Player, Long2BooleanMap> hiddenBlocks = new HashMap<>();
+    private final Object2ObjectMap<UUID, Long2BooleanMap> hiddenBlocks;
+    private final StampedLock lock = new StampedLock();
 
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private final WriteLock writeLock = lock.writeLock();
-    private final ReadLock readLock = lock.readLock();
+    public VisibilityCache() {
+        hiddenBlocks = new Object2ObjectOpenHashMap<>();
+    }
 
     public void setHidden(Player player, long blockKey, boolean hidden) {
+        long stamp = lock.writeLock();
         try {
-            writeLock.lock();
-            Long2BooleanMap blocks = hiddenBlocks.computeIfAbsent(player, p -> new Long2BooleanOpenHashMap());
+            Long2BooleanMap blocks = hiddenBlocks.computeIfAbsent(player.getUniqueId(), p -> new Long2BooleanOpenHashMap());
             blocks.put(blockKey, hidden);
         } finally {
-            writeLock.unlock();
+            lock.unlockWrite(stamp);
         }
     }
 
@@ -42,33 +41,50 @@ public class VisibilityCache implements Listener {
         setHidden(player, BlockUtils.getBlockKey(blockLocation), hidden);
     }
 
-    public boolean isHidden(Player player, long blockKey) {
-        try {
-            readLock.lock();
-            Long2BooleanMap blocks = hiddenBlocks.get(player);
-            boolean result;
-
-            if (blocks == null) {
-                result = true;
-            } else {
-                result = blocks.getOrDefault(blockKey, true);
-            }
-
-            return result;
-        } finally {
-            readLock.unlock();
-        }
-
-    }
-
     public boolean isHidden(Player player, Location blockLocation) {
         return isHidden(player, BlockUtils.getBlockKey(blockLocation));
     }
 
+    public boolean isHidden(Player player, long blockKey) {
+        long stamp = lock.tryOptimisticRead();
+        if (!lock.validate(stamp)) {
+            stamp = lock.readLock();
+            try {
+                return getHiddenResult(player, blockKey);
+            } finally {
+                lock.unlockRead(stamp);
+            }
+        } else {
+            return getHiddenResult(player, blockKey);
+        }
+    }
+
+    private boolean getHiddenResult(Player player, long blockKey) {
+        Long2BooleanMap blocks = hiddenBlocks.get(player.getUniqueId());
+        boolean result;
+
+        if (blocks == null) {
+            result = true;
+        } else {
+            result = blocks.getOrDefault(blockKey, true);
+        }
+
+        return result;
+    }
+
+    private void invalidateCache(Player player) {
+        long stamp = lock.writeLock();
+        try {
+            hiddenBlocks.remove(player.getUniqueId());
+        } finally {
+            lock.unlockWrite(stamp);
+        }
+    }
+
     @EventHandler
     public void onUnload(ChunkUnloadEvent event) {
+        long stamp = lock.writeLock();
         try {
-            writeLock.lock();
             for (Long2BooleanMap blocks : hiddenBlocks.values()) {
                 blocks.keySet().removeIf((LongPredicate) block -> {
                     int chunkX = BlockUtils.getBlockKeyX(block) >> 4;
@@ -80,16 +96,7 @@ public class VisibilityCache implements Listener {
                 });
             }
         } finally {
-            writeLock.unlock();
-        }
-    }
-
-    private void invalidateCache(Player player) {
-        try {
-            writeLock.lock();
-            hiddenBlocks.remove(player);
-        } finally {
-            writeLock.unlock();
+            lock.unlockWrite(stamp);
         }
     }
 

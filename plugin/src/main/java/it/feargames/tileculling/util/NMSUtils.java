@@ -55,7 +55,7 @@ public class NMSUtils {
 
             CRAFT_CHUNK_EMPTY_BLOCK_IDS = CraftChunk.class.getDeclaredField("emptyBlockIDs");
             CRAFT_CHUNK_EMPTY_BLOCK_IDS.setAccessible(true);
-        } catch (Exception e) {
+        } catch (NoSuchFieldException | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }

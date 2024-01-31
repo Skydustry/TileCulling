@@ -2,6 +2,10 @@ package it.feargames.tileculling;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import java.util.UUID;
+import java.util.concurrent.locks.StampedLock;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -9,77 +13,78 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 public class PlayerChunkTracker implements Listener {
 
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
-    private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
-    private final Map<Player, LongSet> trackedPlayers;
+    private final Object2ObjectMap<UUID, LongSet> trackedPlayers;
+    private final StampedLock lock = new StampedLock();
 
     public PlayerChunkTracker() {
-        trackedPlayers = new HashMap<>();
+        trackedPlayers = new Object2ObjectOpenHashMap<>();
     }
 
     public void trackChunk(Player player, long chunkKey) {
+        long stamp = lock.writeLock();
         try {
-            writeLock.lock();
-            trackedPlayers.computeIfAbsent(player, k -> new LongOpenHashSet()).add(chunkKey);
+            trackedPlayers.computeIfAbsent(player.getUniqueId(), k -> new LongOpenHashSet()).add(chunkKey);
         } finally {
-            writeLock.unlock();
+            lock.unlockWrite(stamp);
         }
     }
 
     public void untrackChunk(Player player, long chunkKey) {
+        long stamp = lock.writeLock();
         try {
-            writeLock.lock();
-            LongSet chunkKeys = trackedPlayers.get(player);
-
+            LongSet chunkKeys = trackedPlayers.get(player.getUniqueId());
             if (chunkKeys == null) {
                 return;
             }
 
             chunkKeys.remove(chunkKey);
         } finally {
-            writeLock.unlock();
+            lock.unlockWrite(stamp);
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerChangeWorld(PlayerChangedWorldEvent event) {
+        long stamp = lock.writeLock();
         try {
-            writeLock.lock();
-            trackedPlayers.remove(event.getPlayer());
+            trackedPlayers.remove(event.getPlayer().getUniqueId());
         } finally {
-            writeLock.unlock();
+            lock.unlockWrite(stamp);
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event) {
+        long stamp = lock.writeLock();
         try {
-            writeLock.lock();
-            trackedPlayers.remove(event.getPlayer());
+            trackedPlayers.remove(event.getPlayer().getUniqueId());
         } finally {
-            writeLock.unlock();
+            lock.unlockWrite(stamp);
         }
     }
 
     public long[] getTrackedChunks(Player player) {
-        try {
-            readLock.lock();
-            LongSet trackedChunks = trackedPlayers.get(player);
-
-            if (trackedChunks == null) {
-                return null;
+        long stamp = lock.tryOptimisticRead();
+        if (!lock.validate(stamp)) {
+            stamp = lock.readLock();
+            try {
+                return getChunksArray(player);
+            } finally {
+                lock.unlockRead(stamp);
             }
-
-            return trackedChunks.toArray(new long[0]);
-        } finally {
-            readLock.unlock();
+        } else {
+            return getChunksArray(player);
         }
+    }
+
+    private long[] getChunksArray(Player player) {
+        LongSet trackedChunks = trackedPlayers.get(player.getUniqueId());
+        if (trackedChunks == null) {
+            return null;
+        }
+
+        return trackedChunks.toArray(new long[0]);
     }
 }
