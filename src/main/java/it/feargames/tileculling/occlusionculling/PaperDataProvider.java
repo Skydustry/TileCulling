@@ -8,7 +8,6 @@ import net.minecraft.world.level.chunk.PalettedContainer;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_20_R3.util.CraftMagicNumbers;
 
 public class PaperDataProvider implements DataProvider {
 
@@ -47,9 +46,9 @@ public class PaperDataProvider implements DataProvider {
             return false;
         }
 
-        int relativeX = x & 0xF;
-        int relativeZ = z & 0xF;
-        Material material = CraftMagicNumbers.getMaterial(blockIds[(y + 64) >> 4].get(relativeX, y & 0xF, relativeZ).getBlock());
+        int sectionIndex = (y - world.getMinHeight()) >> 4;
+
+        Material material = blockIds[sectionIndex].get(x & 0xF, y & 0xF, z & 0xF).getBukkitMaterial();
         return CullingPlugin.isOccluding(material);
     }
 

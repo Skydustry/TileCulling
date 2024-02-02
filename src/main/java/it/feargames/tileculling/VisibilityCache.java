@@ -30,8 +30,7 @@ public class VisibilityCache implements Listener {
     public void setHidden(Player player, long blockKey, boolean hidden) {
         long stamp = lock.writeLock();
         try {
-            Long2BooleanMap blocks = hiddenBlocks.computeIfAbsent(player.getUniqueId(), p -> new Long2BooleanOpenHashMap());
-            blocks.put(blockKey, hidden);
+            hiddenBlocks.computeIfAbsent(player.getUniqueId(), p -> new Long2BooleanOpenHashMap()).put(blockKey, hidden);
         } finally {
             lock.unlockWrite(stamp);
         }

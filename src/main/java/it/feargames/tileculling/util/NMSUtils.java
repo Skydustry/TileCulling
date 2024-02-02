@@ -175,6 +175,10 @@ public class NMSUtils {
         CraftWorld craftWorld = (CraftWorld) player.getWorld();
         ServerLevel vanillaWorld = craftWorld.getHandle();
 
+        if (vanillaWorld.getMaxBuildHeight() != 320) {
+            return;
+        }
+
         WrappedLevelChunkData.ChunkData data = container.getLevelChunkData().read(0);
 
         List<WrappedLevelChunkData.BlockEntityInfo> blockTileEntities = data.getBlockEntityInfo();

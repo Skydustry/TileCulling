@@ -81,10 +81,6 @@ public class PlayerChunkTracker implements Listener {
 
     private long[] getChunksArray(Player player) {
         LongSet trackedChunks = trackedPlayers.get(player.getUniqueId());
-        if (trackedChunks == null) {
-            return null;
-        }
-
-        return trackedChunks.toArray(new long[0]);
+        return trackedChunks != null ? trackedChunks.toArray(new long[0]) : null;
     }
 }
