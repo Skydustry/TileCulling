@@ -4,9 +4,9 @@ import com.logisticscraft.occlusionculling.DataProvider;
 import com.logisticscraft.occlusionculling.util.Vec3d;
 import it.feargames.tileculling.ChunkCache;
 import it.feargames.tileculling.CullingPlugin;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.PalettedContainer;
 import org.bukkit.Chunk;
-import org.bukkit.Material;
 import org.bukkit.World;
 
 public class PaperDataProvider implements DataProvider {
@@ -15,7 +15,7 @@ public class PaperDataProvider implements DataProvider {
 
     private World world;
     private long chunkKey;
-    private PalettedContainer<net.minecraft.world.level.block.state.BlockState>[] blockIds;
+    private PalettedContainer<BlockState>[] blockIds;
 
     public PaperDataProvider(ChunkCache chunkCache) {
         this.chunkCache = chunkCache;
@@ -47,9 +47,7 @@ public class PaperDataProvider implements DataProvider {
         }
 
         int sectionIndex = (y - world.getMinHeight()) >> 4;
-
-        Material material = blockIds[sectionIndex].get(x & 0xF, y & 0xF, z & 0xF).getBukkitMaterial();
-        return CullingPlugin.isOccluding(material);
+        return CullingPlugin.isOccluding(blockIds[sectionIndex].get(x & 0xF, y & 0xF, z & 0xF).getBukkitMaterial());
     }
 
     @Override

@@ -53,25 +53,13 @@ public class CullingPlugin extends JavaPlugin {
         Bukkit.getScheduler().cancelTasks(this);
     }
 
-    public ChunkTileVisibilityManager getVisibilityManager() {
-        return chunkTileVisibilityManager;
-    }
-
-    public VisibilityUpdateTask getVisibilityUpdateTask() {
-        return visibilityUpdateTask;
-    }
-
     public static boolean isOccluding(Material material) {
         switch (material) {
-            case BARREL, FURNACE, BLAST_FURNACE, BARRIER, 
-                 SPAWNER, SUSPICIOUS_GRAVEL, SUSPICIOUS_SAND -> {
+            case BARREL, FURNACE, BLAST_FURNACE, BARRIER, SPAWNER, SUSPICIOUS_GRAVEL, SUSPICIOUS_SAND -> {
                 return false;
             }
         }
 
-//      if (Tag.SHULKER_BOXES.isTagged(material)) {
-//          return false;
-//      }
         return material.isOccluding();
     }
 }
