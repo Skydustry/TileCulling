@@ -29,7 +29,7 @@ public class HiddenTileRegistry {
             Material material = Material.getMaterial(materialName);
 
             if (material == null || !material.isBlock()) {
-                logger.warning("Material " + materialName + " is invalid!");
+                logger.warning(() -> "Material " + materialName + " is invalid!");
                 continue;
             }
 
@@ -41,14 +41,13 @@ public class HiddenTileRegistry {
 
             try {
                 tag = (Tag<?>) Tag.class.getDeclaredField(tagName).get(null);
-            } catch (NoSuchFieldException e) {
-                logger.warning("Material tag " + tagName + " is invalid!");
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                logger.warning(() -> "Material tag " + tagName + " is invalid!");
                 continue;
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
             }
+
             if (!tag.getClass().getSimpleName().equals("CraftBlockTag")) {
-                logger.warning("Material tag " + tagName + " is not a block tag!");
+                logger.warning(() -> "Material tag " + tagName + " is not a block tag!");
                 continue;
             }
 

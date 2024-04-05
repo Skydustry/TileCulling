@@ -39,7 +39,7 @@ public class ChunkCache implements Listener {
         this.hiddenTileRegistry = hiddenTileRegistry;
         this.nms = nms;
 
-        cachedChunks = new Object2ObjectOpenHashMap<>(Bukkit.getWorlds().size());
+        this.cachedChunks = new Object2ObjectOpenHashMap<>(Bukkit.getWorlds().size());
     }
 
     static class ChunkEntry {
@@ -64,7 +64,7 @@ public class ChunkCache implements Listener {
 
         long stamp = lock.writeLock();
         try {
-            ChunkEntry entry = cachedChunks.computeIfAbsent(world.getUID(), k -> new Long2ObjectOpenHashMap<>(256, 0.65F)).computeIfAbsent(chunkKey, k -> new ChunkEntry());
+            ChunkEntry entry = cachedChunks.computeIfAbsent(world.getUID(), k -> new Long2ObjectOpenHashMap<>(256, 0.6F)).computeIfAbsent(chunkKey, k -> new ChunkEntry());
             entry.blocks = nms.getBlockIds(chunk);
             entry.tiles = filterTiles(chunk.getTileEntities());
         } finally {

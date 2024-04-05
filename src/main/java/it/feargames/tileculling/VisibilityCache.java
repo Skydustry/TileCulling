@@ -24,7 +24,7 @@ public class VisibilityCache implements Listener {
     private final StampedLock lock = new StampedLock();
 
     public VisibilityCache() {
-        hiddenBlocks = new Object2ObjectOpenHashMap<>();
+        this.hiddenBlocks = new Object2ObjectOpenHashMap<>();
     }
 
     public void setHidden(Player player, long blockKey, boolean hidden) {

@@ -19,13 +19,13 @@ public class PlayerChunkTracker implements Listener {
     private final StampedLock lock = new StampedLock();
 
     public PlayerChunkTracker() {
-        trackedPlayers = new Object2ObjectOpenHashMap<>();
+        this.trackedPlayers = new Object2ObjectOpenHashMap<>();
     }
 
     public void trackChunk(Player player, long chunkKey) {
         long stamp = lock.writeLock();
         try {
-            trackedPlayers.computeIfAbsent(player.getUniqueId(), k -> new LongOpenHashSet()).add(chunkKey);
+            trackedPlayers.computeIfAbsent(player.getUniqueId(), k -> new LongOpenHashSet(128)).add(chunkKey);
         } finally {
             lock.unlockWrite(stamp);
         }

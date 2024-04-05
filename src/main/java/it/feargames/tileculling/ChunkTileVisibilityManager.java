@@ -33,8 +33,8 @@ public class ChunkTileVisibilityManager {
         this.visibilityCache = visibilityCache;
         this.chunkCache = chunkCache;
 
-        dataProvider = new PaperDataProvider(chunkCache);
-        culling = new OcclusionCullingInstance(settings.getTileRange(), dataProvider, new ArrayOcclusionCache(settings.getTileRange()), -0.01);
+        this.dataProvider = new PaperDataProvider(chunkCache);
+        this.culling = new OcclusionCullingInstance(settings.getTileRange(), dataProvider, new ArrayOcclusionCache(settings.getTileRange()), -0.01);
     }
 
     public void updateVisibility(Player player) {
