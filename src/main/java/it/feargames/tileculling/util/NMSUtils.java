@@ -6,7 +6,6 @@ import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 import java.util.List;
@@ -20,6 +19,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerPlayerConnection;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -27,6 +27,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
+import net.minecraft.world.level.chunk.PalettedContainer.Strategy;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -40,12 +41,11 @@ import org.bukkit.craftbukkit.v1_20_R3.block.data.CraftBlockData;
 import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
-public class NMSUtils {
+public final class NMSUtils {
 
     private final Constructor<ClientboundBlockEntityDataPacket> BLOCK_ENTITY_DATA_PACKET_CONSTRUCTOR;
-    private final Field CRAFT_CHUNK_EMPTY_BLOCK_IDS;
-
-    private final static BlockState AIR_BLOCK = Blocks.AIR.defaultBlockState();
+    private final BlockState AIR_BLOCK;
+    private final PalettedContainer<BlockState> EMPTY_BLOCK_IDS;
 
     public NMSUtils() {
         try {
@@ -53,9 +53,10 @@ public class NMSUtils {
                     BlockPos.class, BlockEntityType.class, CompoundTag.class);
             BLOCK_ENTITY_DATA_PACKET_CONSTRUCTOR.setAccessible(true);
 
-            CRAFT_CHUNK_EMPTY_BLOCK_IDS = CraftChunk.class.getDeclaredField("emptyBlockIDs");
-            CRAFT_CHUNK_EMPTY_BLOCK_IDS.setAccessible(true);
-        } catch (NoSuchFieldException | NoSuchMethodException e) {
+            AIR_BLOCK = Blocks.AIR.defaultBlockState();
+
+            EMPTY_BLOCK_IDS = new PalettedContainer<>(Block.BLOCK_STATE_REGISTRY, AIR_BLOCK, Strategy.SECTION_STATES, null);
+        } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }
@@ -264,11 +265,7 @@ public class NMSUtils {
             if (!cs[i].hasOnlyAir()) {
                 sectionBlockIDs[i] = cs[i].getStates();
             } else {
-                try {
-                    sectionBlockIDs[i] = (PalettedContainer) CRAFT_CHUNK_EMPTY_BLOCK_IDS.get(craftChunk);
-                } catch (IllegalAccessException ex) {
-                    // Shouldn't happen
-                }
+                sectionBlockIDs[i] = EMPTY_BLOCK_IDS;
             }
         }
 

@@ -5,8 +5,7 @@ import org.bukkit.block.Block;
 
 public final class BlockUtils {
 
-    private BlockUtils() {
-    }
+    private BlockUtils() {}
 
     public static long getBlockKey(Block block) {
         return getBlockKey(block.getX(), block.getY(), block.getZ());
